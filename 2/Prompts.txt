@@ -1,0 +1,15 @@
+Now the stage location has got csv files, go under customer-master sub-folder (inside initial-load), check all the 4 csv files and load them in the bronze layer. 
+The 1st line of each csv file is a header-line and before loadaing these csv files, create the table that matches the header in csv, 
+remove any space or special character from the header for column name use, also pick the most appropriate data type while creating tables. 
+Add 3 additional audit columns based on the stage location like __file_name, __row_number and __load_st using stage location metadata. 
+Make sure give short and meaningful table descriptions and column descrition. 
+use the file formate created inside the common schema or feel free to use infer schema to solve the problem)
+
+
+Now we are done with country master, lets do the same for initial-load/product-master csv file, it has total 5 csv files for product data, do the same what is done for country master.
+
+Now we are done with product master, lets do the same for initial-load/store-master csv file, it has total 5 csv files for store data, do the same what is done for product master.
+
+Now we are done with store master, lets do the same for initial-load/customer-master csv file, it has total 1 csv file for customer data, do the same what is done for store master.
+
+Now we are done with customer master, lets do the same for initial-load/sales-master csv file, it has total 2 csv files for sales data, do the same what is done for customer master.
