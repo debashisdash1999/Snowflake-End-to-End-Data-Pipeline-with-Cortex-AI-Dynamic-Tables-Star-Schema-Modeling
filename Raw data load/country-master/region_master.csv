@@ -1,0 +1,5 @@
+region_code,region_name,is_active,effective_start_date,effective_end_date,created_at,source_system
+AMER,Americas,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.209255,MDM_CORE
+EMEA,Europe Middle East Africa,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.209258,MDM_CORE
+JAPAN,Japan,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.209259,MDM_CORE
+APAC,Asia Pacific,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.209260,MDM_CORE

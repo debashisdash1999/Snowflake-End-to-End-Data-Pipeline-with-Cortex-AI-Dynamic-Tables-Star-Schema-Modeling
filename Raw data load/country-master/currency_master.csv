@@ -1,0 +1,6 @@
+currency_code,currency_name,currency_symbol,minor_unit,is_active,effective_start_date,effective_end_date,created_at,source_system
+USD,US Dollar,$,2,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.213269,TREASURY_SYS
+GBP,British Pound,£,2,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.213272,TREASURY_SYS
+JPY,Japanese Yen,¥,0,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.213276,TREASURY_SYS
+CNY,Chinese Yuan,¥,2,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.213276,TREASURY_SYS
+INR,Indian Rupee,₹,2,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.213277,TREASURY_SYS

@@ -1,0 +1,6 @@
+country_code,country_name,region_code,currency_code,tax_code,primary_language,timezone,ecommerce_supported,retail_store_supported,market_tier,population_millions,gdp_usd_billions,is_active,effective_start_date,effective_end_date,created_at,source_system
+US,United States,AMER,USD,US_STD,English,America/New_York,Y,N,Tier2,709,17774,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.217571,MDM_CORE
+UK,United Kingdom,EMEA,GBP,UK_VAT_STD,English,Europe/London,Y,N,Tier2,685,16943,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.217580,MDM_CORE
+JP,Japan,JAPAN,JPY,JP_VAT_STD,Japanese,Asia/Tokyo,Y,Y,Tier2,599,25103,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.217583,MDM_CORE
+CN,China,APAC,CNY,CN_VAT_STD,Chinese,Asia/Shanghai,Y,Y,Tier2,450,17146,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.217586,MDM_CORE
+IN,India,APAC,INR,IN_GST_STD,Hindi,Asia/Kolkata,Y,Y,Tier2,1042,8067,Y,2000-01-01,9999-12-31,2026-02-05 18:17:58.217588,MDM_CORE
