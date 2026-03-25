@@ -1,0 +1,2 @@
+Create a semantic model by using all the fact/dim tables that exist in gold layer and enable the snowflake analyst,
+so I can talk to the data using natural language and ask natural questions on my sales data
