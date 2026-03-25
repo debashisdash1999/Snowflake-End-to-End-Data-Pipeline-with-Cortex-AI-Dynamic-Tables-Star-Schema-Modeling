@@ -1,0 +1,951 @@
+name: sales_analytics
+description: >
+  Sales Analytics Semantic Model for retail sales analysis.
+  Enables natural language queries on sales transactions, products, customers, stores, and geographic regions.
+  Ask questions like "What are total sales by region?" or "Top 10 products by revenue this year".
+
+tables:
+  - name: dim_customer
+    description: Customer master data with demographics, location, and loyalty information
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: DIM_CUSTOMER
+    primary_key:
+      columns:
+        - customer_key
+    dimensions:
+      - name: customer_key
+        description: Unique customer dimension key for joining
+        expr: CUSTOMER_DIM_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: customer_id
+        description: Business customer identifier
+        expr: CUSTOMER_ID
+        data_type: VARCHAR
+      - name: customer_number
+        description: Customer account number
+        expr: CUSTOMER_NUMBER
+        data_type: VARCHAR
+      - name: customer_name
+        synonyms:
+          - client name
+          - buyer name
+        description: Full name of the customer
+        expr: FULL_NAME
+        data_type: VARCHAR
+      - name: first_name
+        description: Customer first name
+        expr: FIRST_NAME
+        data_type: VARCHAR
+      - name: last_name
+        description: Customer last name
+        expr: LAST_NAME
+        data_type: VARCHAR
+      - name: gender
+        description: Customer gender (Male/Female)
+        expr: GENDER
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - Male
+          - Female
+      - name: email
+        description: Customer email address
+        expr: EMAIL
+        data_type: VARCHAR
+      - name: city
+        description: Customer city
+        expr: CITY
+        data_type: VARCHAR
+      - name: state
+        synonyms:
+          - province
+          - state_province
+        description: Customer state or province
+        expr: STATE_PROVINCE
+        data_type: VARCHAR
+      - name: country
+        description: Customer country name
+        expr: COUNTRY_NAME
+        data_type: VARCHAR
+      - name: country_code
+        description: Customer country code
+        expr: COUNTRY_CODE
+        data_type: VARCHAR
+      - name: region
+        synonyms:
+          - geographic region
+          - customer region
+        description: Geographic region (AMER, EMEA, APAC, JAPAN)
+        expr: REGION
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - AMER
+          - EMEA
+          - APAC
+          - JAPAN
+      - name: customer_segment
+        synonyms:
+          - segment
+          - market segment
+        description: Customer business segment
+        expr: CUSTOMER_SEGMENT
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - Consumer
+          - Business
+      - name: loyalty_tier
+        synonyms:
+          - loyalty level
+          - membership tier
+        description: Customer loyalty program tier
+        expr: LOYALTY_TIER
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - None
+          - Silver
+          - Gold
+          - Platinum
+      - name: is_active
+        description: Whether customer account is active
+        expr: IS_ACTIVE
+        data_type: BOOLEAN
+    time_dimensions:
+      - name: registration_date
+        description: Date customer registered
+        expr: REGISTRATION_DATE
+        data_type: DATE
+      - name: date_of_birth
+        description: Customer date of birth
+        expr: DATE_OF_BIRTH
+        data_type: DATE
+    metrics:
+      - name: customer_count
+        synonyms:
+          - number of customers
+          - total customers
+        description: Count of unique customers
+        expr: COUNT(DISTINCT CUSTOMER_ID)
+
+  - name: dim_product
+    description: Product hierarchy with category, family, model, and SKU details
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: DIM_PRODUCT
+    primary_key:
+      columns:
+        - product_key
+    dimensions:
+      - name: product_key
+        description: Unique product dimension key for joining
+        expr: PRODUCT_DIM_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: sku_code
+        synonyms:
+          - sku
+          - product code
+          - item code
+        description: Stock keeping unit code - lowest product level
+        expr: SKU_CODE
+        data_type: VARCHAR
+      - name: variant
+        description: Product variant (storage capacity and color)
+        expr: VARIANT
+        data_type: VARCHAR
+      - name: price_tier
+        synonyms:
+          - pricing tier
+        description: Product pricing tier
+        expr: PRICE_TIER
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - Standard
+          - Premium
+      - name: model_code
+        description: Product model code
+        expr: MODEL_CODE
+        data_type: VARCHAR
+      - name: model_name
+        synonyms:
+          - product model
+          - model
+        description: Product model name
+        expr: MODEL_NAME
+        data_type: VARCHAR
+      - name: lifecycle_status
+        synonyms:
+          - product status
+        description: Product lifecycle status
+        expr: LIFECYCLE_STATUS
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - ACTIVE
+          - DISCONTINUED
+      - name: family_code
+        description: Product family code
+        expr: FAMILY_CODE
+        data_type: VARCHAR
+      - name: family_name
+        synonyms:
+          - product family
+        description: Product family name
+        expr: FAMILY_NAME
+        data_type: VARCHAR
+      - name: category_code
+        description: Product category code
+        expr: CATEGORY_CODE
+        data_type: VARCHAR
+      - name: category_name
+        synonyms:
+          - product category
+          - category
+        description: Product category name (iPhone, iPad, Mac, etc.)
+        expr: CATEGORY_NAME
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - iPhone
+          - iPad
+          - Mac
+          - Apple Watch
+          - AirPods
+          - Apple TV
+          - Accessories
+          - AppleCare
+          - Services
+      - name: reporting_segment
+        description: Financial reporting segment
+        expr: REPORTING_SEGMENT
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - Hardware
+          - Services
+          - Accessories
+    time_dimensions:
+      - name: sku_launch_date
+        description: SKU global launch date
+        expr: SKU_LAUNCH_DATE
+        data_type: DATE
+      - name: model_launch_date
+        description: Model launch date
+        expr: MODEL_LAUNCH_DATE
+        data_type: DATE
+    metrics:
+      - name: product_count
+        synonyms:
+          - number of products
+          - sku count
+        description: Count of unique products/SKUs
+        expr: COUNT(DISTINCT SKU_CODE)
+
+  - name: dim_store
+    description: Store locations with format, size, and geographic attributes
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: DIM_STORE
+    primary_key:
+      columns:
+        - store_key
+    dimensions:
+      - name: store_key
+        description: Unique store dimension key for joining
+        expr: STORE_DIM_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: store_code
+        description: Unique store identifier
+        expr: STORE_CODE
+        data_type: VARCHAR
+      - name: store_name
+        synonyms:
+          - store
+          - location name
+        description: Store display name
+        expr: STORE_NAME
+        data_type: VARCHAR
+      - name: store_format
+        synonyms:
+          - format
+          - store type
+        description: Store format type
+        expr: FORMAT_CODE
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - MALL
+          - MINI
+          - FLAGSHIP
+      - name: store_city
+        synonyms:
+          - city
+        description: City where store is located
+        expr: CITY
+        data_type: VARCHAR
+      - name: store_state
+        synonyms:
+          - state
+        description: State or province where store is located
+        expr: STATE_CODE
+        data_type: VARCHAR
+      - name: store_country
+        description: Country where store is located
+        expr: COUNTRY_CODE
+        data_type: VARCHAR
+      - name: store_region
+        description: Geographic region of store
+        expr: REGION_CODE
+        data_type: VARCHAR
+      - name: store_status
+        description: Store operational status
+        expr: LIFECYCLE_STATUS
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - ACTIVE
+          - CLOSED
+      - name: is_active
+        description: Whether store is currently active
+        expr: IS_ACTIVE
+        data_type: VARCHAR
+    time_dimensions:
+      - name: store_open_date
+        description: Date store opened
+        expr: STORE_OPEN_DATE
+        data_type: DATE
+    facts:
+      - name: floor_area_sqft
+        description: Store floor area in square feet
+        expr: FLOOR_AREA_SQFT
+        data_type: NUMBER
+      - name: annual_rent_usd
+        description: Annual rent in USD
+        expr: ANNUAL_RENT_USD
+        data_type: NUMBER
+    metrics:
+      - name: store_count
+        synonyms:
+          - number of stores
+          - total stores
+        description: Count of unique stores
+        expr: COUNT(DISTINCT STORE_CODE)
+      - name: total_floor_area
+        description: Total floor area across stores
+        expr: SUM(FLOOR_AREA_SQFT)
+      - name: total_annual_rent
+        description: Total annual rent across stores
+        expr: SUM(ANNUAL_RENT_USD)
+
+  - name: dim_country
+    description: Country reference with region, currency, and tax information
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: DIM_COUNTRY
+    primary_key:
+      columns:
+        - country_key
+    dimensions:
+      - name: country_key
+        description: Unique country dimension key for joining
+        expr: COUNTRY_DIM_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: country_code
+        description: ISO country code
+        expr: COUNTRY_CODE
+        data_type: VARCHAR
+      - name: country_name
+        synonyms:
+          - country
+        description: Full country name
+        expr: COUNTRY_NAME
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - United States
+          - United Kingdom
+          - Japan
+          - China
+          - India
+      - name: region_code
+        description: Geographic region code
+        expr: REGION_CODE
+        data_type: VARCHAR
+      - name: region_name
+        synonyms:
+          - region
+          - geographic region
+        description: Geographic region name
+        expr: REGION_NAME
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - Americas
+          - Europe Middle East Africa
+          - Asia Pacific
+          - Japan
+      - name: currency_code
+        description: Local currency code
+        expr: CURRENCY_CODE
+        data_type: VARCHAR
+      - name: currency_name
+        description: Currency name
+        expr: CURRENCY_NAME
+        data_type: VARCHAR
+      - name: currency_symbol
+        description: Currency symbol for display
+        expr: CURRENCY_SYMBOL
+        data_type: VARCHAR
+      - name: tax_type
+        description: Type of tax applied
+        expr: TAX_TYPE
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - VAT
+          - GST
+          - SALES_TAX
+      - name: market_tier
+        description: Market classification tier
+        expr: MARKET_TIER
+        data_type: VARCHAR
+    facts:
+      - name: tax_rate
+        description: Tax rate as decimal
+        expr: TAX_RATE
+        data_type: NUMBER
+    metrics:
+      - name: country_count
+        description: Count of countries
+        expr: COUNT(DISTINCT COUNTRY_CODE)
+
+  - name: dim_date
+    description: Calendar date dimension for time-based analysis
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: DIM_DATE
+    primary_key:
+      columns:
+        - date_key
+    dimensions:
+      - name: date_key
+        description: Unique date dimension key for joining
+        expr: DATE_DIM_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: year
+        synonyms:
+          - calendar year
+        description: Calendar year (e.g., 2024, 2025)
+        expr: YEAR_NUMBER
+        data_type: NUMBER
+      - name: quarter
+        synonyms:
+          - calendar quarter
+        description: Calendar quarter (1-4)
+        expr: QUARTER_NUMBER
+        data_type: NUMBER
+      - name: quarter_name
+        description: Quarter name (Q1, Q2, Q3, Q4)
+        expr: QUARTER_NAME
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - Q1
+          - Q2
+          - Q3
+          - Q4
+      - name: month
+        synonyms:
+          - month number
+        description: Month number (1-12)
+        expr: MONTH_NUMBER
+        data_type: NUMBER
+      - name: month_name
+        synonyms:
+          - month
+        description: Full month name
+        expr: MONTH_NAME
+        data_type: VARCHAR
+      - name: week
+        synonyms:
+          - week number
+          - week of year
+        description: Week number of the year
+        expr: WEEK_NUMBER
+        data_type: NUMBER
+      - name: day_of_week
+        description: Day of week (0=Sunday, 6=Saturday)
+        expr: DAY_OF_WEEK
+        data_type: NUMBER
+      - name: day_name
+        description: Day name abbreviation
+        expr: DAY_NAME
+        data_type: VARCHAR
+      - name: year_month
+        description: Year and month (YYYY-MM format)
+        expr: YEAR_MONTH
+        data_type: VARCHAR
+      - name: year_quarter
+        description: Year and quarter (YYYY-QN format)
+        expr: YEAR_QUARTER
+        data_type: VARCHAR
+      - name: fiscal_year
+        synonyms:
+          - fy
+        description: Fiscal year (April-March)
+        expr: FISCAL_YEAR
+        data_type: NUMBER
+      - name: fiscal_quarter
+        synonyms:
+          - fq
+        description: Fiscal quarter
+        expr: FISCAL_QUARTER
+        data_type: NUMBER
+      - name: is_weekend
+        description: Whether the day is a weekend
+        expr: IS_WEEKEND
+        data_type: BOOLEAN
+    time_dimensions:
+      - name: date
+        synonyms:
+          - calendar date
+          - transaction date
+        description: Calendar date
+        expr: DATE_KEY
+        data_type: DATE
+
+  - name: fact_sales_header
+    description: Sales transactions at header level - one row per transaction with totals
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: FACT_SALES_HEADER
+    primary_key:
+      columns:
+        - fact_header_key
+    dimensions:
+      - name: fact_header_key
+        description: Unique fact key
+        expr: FACT_SALES_HEADER_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: customer_dim_key
+        description: Foreign key to customer dimension
+        expr: CUSTOMER_DIM_KEY
+        data_type: VARCHAR
+      - name: store_dim_key
+        description: Foreign key to store dimension
+        expr: STORE_DIM_KEY
+        data_type: VARCHAR
+      - name: country_dim_key
+        description: Foreign key to country dimension
+        expr: COUNTRY_DIM_KEY
+        data_type: VARCHAR
+      - name: date_dim_key
+        description: Foreign key to date dimension
+        expr: DATE_DIM_KEY
+        data_type: VARCHAR
+      - name: transaction_id
+        description: Unique transaction identifier
+        expr: TRANSACTION_ID
+        data_type: VARCHAR
+      - name: transaction_number
+        synonyms:
+          - order number
+          - receipt number
+        description: Business transaction reference number
+        expr: TRANSACTION_NUMBER
+        data_type: VARCHAR
+      - name: channel
+        synonyms:
+          - sales channel
+        description: Sales channel
+        expr: CHANNEL_ID
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - POS
+          - WEB
+      - name: payment_method
+        synonyms:
+          - payment type
+        description: Payment method used
+        expr: PAYMENT_METHOD
+        data_type: VARCHAR
+      - name: currency
+        description: Transaction currency
+        expr: CURRENCY
+        data_type: VARCHAR
+    time_dimensions:
+      - name: transaction_date
+        synonyms:
+          - sale date
+          - order date
+        description: Date of the transaction
+        expr: TRANSACTION_TIMESTAMP
+        data_type: DATE
+    facts:
+      - name: gross_amount
+        description: Gross transaction amount before discounts
+        expr: GROSS_AMOUNT
+        data_type: NUMBER
+      - name: discount_amount
+        description: Total discount on transaction
+        expr: TOTAL_DISCOUNT
+        data_type: NUMBER
+      - name: tax_amount
+        description: Total tax on transaction
+        expr: TOTAL_TAX
+        data_type: NUMBER
+      - name: net_amount
+        description: Net transaction amount
+        expr: NET_TOTAL
+        data_type: NUMBER
+    metrics:
+      - name: total_transactions
+        synonyms:
+          - transaction count
+          - number of transactions
+          - order count
+        description: Count of transactions
+        expr: COUNT(DISTINCT TRANSACTION_ID)
+      - name: total_gross_sales
+        synonyms:
+          - gross sales
+          - gross revenue
+        description: Total gross sales before discounts
+        expr: SUM(GROSS_AMOUNT)
+      - name: total_discounts
+        synonyms:
+          - discount total
+        description: Total discounts given
+        expr: SUM(TOTAL_DISCOUNT)
+      - name: total_tax
+        synonyms:
+          - tax total
+        description: Total tax collected
+        expr: SUM(TOTAL_TAX)
+      - name: total_net_sales
+        synonyms:
+          - net sales
+          - net revenue
+          - total sales
+          - sales by region
+          - sales by country
+          - sales by store
+          - sales by customer
+        description: Total net sales after discounts - use for transaction-level analysis by region, country, store, or customer
+        expr: SUM(NET_TOTAL)
+      - name: average_transaction_value
+        synonyms:
+          - avg order value
+          - average basket size
+          - atv
+        description: Average transaction value
+        expr: AVG(NET_TOTAL)
+    filters:
+      - name: pos_sales
+        description: Point of sale transactions only
+        expr: CHANNEL_ID = 'POS'
+      - name: web_sales
+        description: Web/online transactions only
+        expr: CHANNEL_ID = 'WEB'
+
+  - name: fact_sales_item
+    description: Sales transactions at line item level - one row per product sold
+    base_table:
+      database: SALES_DEV
+      schema: GOLD
+      table: FACT_SALES_ITEM
+    primary_key:
+      columns:
+        - fact_item_key
+    dimensions:
+      - name: fact_item_key
+        description: Unique line item fact key
+        expr: FACT_SALES_ITEM_KEY
+        data_type: VARCHAR
+        unique: true
+      - name: fact_header_key
+        description: Foreign key to sales header
+        expr: FACT_SALES_HEADER_KEY
+        data_type: VARCHAR
+      - name: customer_dim_key
+        description: Foreign key to customer dimension
+        expr: CUSTOMER_DIM_KEY
+        data_type: VARCHAR
+      - name: product_dim_key
+        description: Foreign key to product dimension
+        expr: PRODUCT_DIM_KEY
+        data_type: VARCHAR
+      - name: store_dim_key
+        description: Foreign key to store dimension
+        expr: STORE_DIM_KEY
+        data_type: VARCHAR
+      - name: country_dim_key
+        description: Foreign key to country dimension
+        expr: COUNTRY_DIM_KEY
+        data_type: VARCHAR
+      - name: date_dim_key
+        description: Foreign key to date dimension
+        expr: DATE_DIM_KEY
+        data_type: VARCHAR
+      - name: line_id
+        description: Unique line item identifier
+        expr: TRANSACTION_LINE_ID
+        data_type: VARCHAR
+      - name: transaction_id
+        description: Parent transaction identifier
+        expr: TRANSACTION_ID
+        data_type: VARCHAR
+      - name: channel
+        description: Sales channel
+        expr: CHANNEL_ID
+        data_type: VARCHAR
+    time_dimensions:
+      - name: transaction_date
+        description: Date of the sale
+        expr: TRANSACTION_TIMESTAMP
+        data_type: DATE
+    facts:
+      - name: quantity
+        description: Quantity of items sold
+        expr: QUANTITY
+        data_type: NUMBER
+      - name: unit_price
+        description: Price per unit
+        expr: UNIT_PRICE
+        data_type: NUMBER
+      - name: line_discount
+        description: Discount on this line item
+        expr: DISCOUNT_AMOUNT
+        data_type: NUMBER
+      - name: line_tax
+        description: Tax on this line item
+        expr: TAX_AMOUNT
+        data_type: NUMBER
+      - name: line_total
+        description: Total for this line item
+        expr: LINE_TOTAL
+        data_type: NUMBER
+    metrics:
+      - name: total_units_sold
+        synonyms:
+          - units sold
+          - quantity sold
+          - total quantity
+        description: Total units/quantity sold
+        expr: SUM(QUANTITY)
+      - name: total_line_revenue
+        synonyms:
+          - product revenue
+          - item revenue
+          - revenue by product
+          - product sales
+        description: Total revenue from line items - use for product-level analysis
+        expr: SUM(LINE_TOTAL)
+      - name: total_line_discounts
+        description: Total line item discounts
+        expr: SUM(DISCOUNT_AMOUNT)
+      - name: total_line_tax
+        description: Total line item tax
+        expr: SUM(TAX_AMOUNT)
+      - name: average_unit_price
+        synonyms:
+          - avg price
+          - average selling price
+        description: Average unit price
+        expr: AVG(UNIT_PRICE)
+      - name: total_line_items
+        synonyms:
+          - line count
+        description: Count of line items
+        expr: COUNT(*)
+
+relationships:
+  - name: header_to_customer
+    left_table: fact_sales_header
+    right_table: dim_customer
+    relationship_columns:
+      - left_column: customer_dim_key
+        right_column: customer_key
+
+  - name: header_to_store
+    left_table: fact_sales_header
+    right_table: dim_store
+    relationship_columns:
+      - left_column: store_dim_key
+        right_column: store_key
+
+  - name: header_to_country
+    left_table: fact_sales_header
+    right_table: dim_country
+    relationship_columns:
+      - left_column: country_dim_key
+        right_column: country_key
+
+  - name: header_to_date
+    left_table: fact_sales_header
+    right_table: dim_date
+    relationship_columns:
+      - left_column: date_dim_key
+        right_column: date_key
+
+  - name: item_to_header
+    left_table: fact_sales_item
+    right_table: fact_sales_header
+    relationship_columns:
+      - left_column: fact_header_key
+        right_column: fact_header_key
+
+  - name: item_to_product
+    left_table: fact_sales_item
+    right_table: dim_product
+    relationship_columns:
+      - left_column: product_dim_key
+        right_column: product_key
+
+  - name: item_to_customer
+    left_table: fact_sales_item
+    right_table: dim_customer
+    relationship_columns:
+      - left_column: customer_dim_key
+        right_column: customer_key
+
+  - name: item_to_store
+    left_table: fact_sales_item
+    right_table: dim_store
+    relationship_columns:
+      - left_column: store_dim_key
+        right_column: store_key
+
+  - name: item_to_country
+    left_table: fact_sales_item
+    right_table: dim_country
+    relationship_columns:
+      - left_column: country_dim_key
+        right_column: country_key
+
+  - name: item_to_date
+    left_table: fact_sales_item
+    right_table: dim_date
+    relationship_columns:
+      - left_column: date_dim_key
+        right_column: date_key
+
+verified_queries:
+  - name: total_sales_by_region
+    question: What are the total sales by region?
+    use_as_onboarding_question: true
+    sql: |
+      SELECT 
+        c.REGION_NAME AS region,
+        SUM(f.NET_TOTAL) AS total_sales
+      FROM SALES_DEV.GOLD.FACT_SALES_HEADER f
+      JOIN SALES_DEV.GOLD.DIM_COUNTRY c ON f.COUNTRY_DIM_KEY = c.COUNTRY_DIM_KEY
+      GROUP BY c.REGION_NAME
+      ORDER BY total_sales DESC
+
+  - name: top_10_products
+    question: What are the top 10 products by revenue?
+    use_as_onboarding_question: true
+    sql: |
+      SELECT 
+        p.MODEL_NAME AS product,
+        p.CATEGORY_NAME AS category,
+        SUM(i.LINE_TOTAL) AS revenue,
+        SUM(i.QUANTITY) AS units_sold
+      FROM SALES_DEV.GOLD.FACT_SALES_ITEM i
+      JOIN SALES_DEV.GOLD.DIM_PRODUCT p ON i.PRODUCT_DIM_KEY = p.PRODUCT_DIM_KEY
+      GROUP BY p.MODEL_NAME, p.CATEGORY_NAME
+      ORDER BY revenue DESC
+      LIMIT 10
+
+  - name: monthly_sales_trend
+    question: Show me the monthly sales trend
+    use_as_onboarding_question: true
+    sql: |
+      SELECT 
+        d.YEAR_MONTH AS month,
+        SUM(f.NET_TOTAL) AS net_sales,
+        COUNT(DISTINCT f.TRANSACTION_ID) AS transactions
+      FROM SALES_DEV.GOLD.FACT_SALES_HEADER f
+      JOIN SALES_DEV.GOLD.DIM_DATE d ON f.DATE_DIM_KEY = d.DATE_DIM_KEY
+      GROUP BY d.YEAR_MONTH
+      ORDER BY d.YEAR_MONTH
+
+  - name: sales_by_loyalty_tier
+    question: What are sales by customer loyalty tier?
+    sql: |
+      SELECT 
+        c.LOYALTY_TIER AS loyalty_tier,
+        COUNT(DISTINCT f.TRANSACTION_ID) AS transactions,
+        SUM(f.NET_TOTAL) AS total_sales,
+        AVG(f.NET_TOTAL) AS avg_transaction
+      FROM SALES_DEV.GOLD.FACT_SALES_HEADER f
+      JOIN SALES_DEV.GOLD.DIM_CUSTOMER c ON f.CUSTOMER_DIM_KEY = c.CUSTOMER_DIM_KEY
+      GROUP BY c.LOYALTY_TIER
+      ORDER BY total_sales DESC
+
+  - name: top_stores
+    question: Which stores have the highest sales?
+    sql: |
+      SELECT 
+        s.STORE_NAME AS store,
+        s.CITY AS city,
+        s.FORMAT_CODE AS format,
+        COUNT(*) AS transactions,
+        SUM(f.NET_TOTAL) AS total_sales
+      FROM SALES_DEV.GOLD.FACT_SALES_HEADER f
+      JOIN SALES_DEV.GOLD.DIM_STORE s ON f.STORE_DIM_KEY = s.STORE_DIM_KEY
+      GROUP BY s.STORE_NAME, s.CITY, s.FORMAT_CODE
+      ORDER BY total_sales DESC
+      LIMIT 10
+
+  - name: sales_by_category
+    question: What are sales by product category?
+    use_as_onboarding_question: true
+    sql: |
+      SELECT 
+        p.CATEGORY_NAME AS category,
+        SUM(i.QUANTITY) AS units_sold,
+        SUM(i.LINE_TOTAL) AS revenue
+      FROM SALES_DEV.GOLD.FACT_SALES_ITEM i
+      JOIN SALES_DEV.GOLD.DIM_PRODUCT p ON i.PRODUCT_DIM_KEY = p.PRODUCT_DIM_KEY
+      GROUP BY p.CATEGORY_NAME
+      ORDER BY revenue DESC
+
+  - name: sales_by_channel
+    question: Compare sales between POS and Web channels
+    sql: |
+      SELECT 
+        f.CHANNEL_ID AS channel,
+        COUNT(DISTINCT f.TRANSACTION_ID) AS transactions,
+        SUM(f.NET_TOTAL) AS total_sales,
+        AVG(f.NET_TOTAL) AS avg_order_value
+      FROM SALES_DEV.GOLD.FACT_SALES_HEADER f
+      GROUP BY f.CHANNEL_ID
+
+  - name: quarterly_sales
+    question: What are sales by quarter?
+    sql: |
+      SELECT 
+        d.YEAR_QUARTER AS quarter,
+        SUM(f.NET_TOTAL) AS total_sales
+      FROM SALES_DEV.GOLD.FACT_SALES_HEADER f
+      JOIN SALES_DEV.GOLD.DIM_DATE d ON f.DATE_DIM_KEY = d.DATE_DIM_KEY
+      GROUP BY d.YEAR_QUARTER
+      ORDER BY d.YEAR_QUARTER
