@@ -6,41 +6,41 @@
 
 ## 📌 Project Summary
 
-This project is an end-to-end **Snowflake-native data engineering pipeline** built for an **Apple Retail Sales** domain. It follows the **Medallion Architecture** (Bronze → Silver → Gold) and leverages **Snowflake Cortex Code (CoCo)** — an AI assistant — to accelerate DDL generation, transformation logic, dimensional modeling, and semantic layer creation.
+This project is an end-to-end **Snowflake-native data engineering pipeline** built for an **Apple Retail Sales** domain. It follows the **Medallion Architecture** (Bronze → Silver → Gold) and leverages **Snowflake Cortex Code (CoCo)** — an AI assistant built into Snowflake — to accelerate DDL generation, transformation logic, dimensional modeling, and semantic layer creation.
 
-The pipeline ingests raw CSV data, cleanses and validates it, builds a star schema with SCD Type 2 dimensions and dual-grain fact tables, automates incremental loads via a Task DAG, and exposes the data for **natural language querying** through a Cortex Analyst Semantic Layer.
+The pipeline ingests raw CSV data, cleanses and validates it, builds a star schema with SCD Type 2 dimensions and dual-grain fact tables, pre-computes aggregations at daily/weekly/monthly grains, and exposes the data for **natural language querying** through a Cortex Analyst Semantic Layer.
 
 ---
 
 ## 🏗️ Architecture Overview
 
 ```
-CSV Files (Source)
+13 CSV Files (Source)
       │
       ▼
-┌─────────────────────────────────────────────────────────┐
-│               Snowflake Cloud Data Platform              │
-│                                                         │
-│  ┌──────────┐    ┌──────────┐    ┌──────────────────┐  │
-│  │  BRONZE  │───▶│  SILVER  │───▶│      GOLD        │  │
-│  │  Schema  │    │  Schema  │    │      Schema      │  │
-│  │          │    │          │    │                  │  │
-│  │ Raw Data │    │  Clean   │    │ Dims + Facts +   │  │
-│  │ Landing  │    │ Curated  │    │ Aggregations     │  │
-│  └──────────┘    └──────────┘    └──────────────────┘  │
-│                                          │              │
-│              ┌───────────────────────────┘              │
-│              ▼                                          │
-│  ┌──────────────────────┐                              │
-│  │   SEMANTIC LAYER     │  ◀── Natural Language Query  │
-│  │  (Cortex Analyst)    │                              │
-│  └──────────────────────┘                              │
-│                                                         │
-│  ┌──────────┐                                          │
-│  │  COMMON  │  (File Formats, Sequences, Utilities)    │
-│  │  Schema  │                                          │
-│  └──────────┘                                          │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                 Snowflake Cloud Data Platform                 │
+│                                                              │
+│  ┌──────────┐    ┌──────────┐    ┌────────────────────────┐ │
+│  │  BRONZE  │───▶│  SILVER  │───▶│         GOLD           │ │
+│  │  Schema  │    │  Schema  │    │        Schema          │ │
+│  │          │    │          │    │                        │ │
+│  │ 13 Raw   │    │ 13 Clean │    │ 5 Dims + 2 Facts +     │ │
+│  │ Tables   │    │  Tables  │    │ 1 Bridge + 3 Agg Facts │ │
+│  └──────────┘    └──────────┘    └────────────────────────┘ │
+│                                             │                │
+│               ┌─────────────────────────────┘                │
+│               ▼                                              │
+│  ┌───────────────────────┐                                   │
+│  │    SEMANTIC LAYER     │  ◀── Natural Language Query       │
+│  │   (Cortex Analyst)    │                                   │
+│  └───────────────────────┘                                   │
+│                                                              │
+│  ┌──────────┐                                               │
+│  │  COMMON  │  (File Formats, Utilities)                    │
+│  │  Schema  │                                               │
+│  └──────────┘                                               │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -51,34 +51,34 @@ CSV Files (Source)
 |---|---|
 | Cloud Data Platform | Snowflake |
 | Storage / Ingestion | Snowflake Internal Stage + COPY INTO |
-| Transformation Engine | Dynamic Tables (Incremental) |
-| Orchestration | Task DAG (Root + Child Tasks) |
+| Transformation Engine | Dynamic Tables (Incremental + Full) |
 | Data Modeling | Star Schema — SCD Type 2 |
 | AI Development Assistant | Snowflake Cortex Code (CoCo) |
 | Natural Language Analytics | Snowflake Cortex Analyst |
-| Semantic Model | YAML-based Semantic Layer |
+| Semantic Model | YAML-based Semantic Model |
+| Constraints | Informational NOT ENFORCED PK/FK |
 | Version Control | GitHub |
-| Environment Management | Dev → QA → Prod (Context Promotion) |
+| Environment Management | SALES_DEV → SALES_QA → SALES_PROD |
 
 ---
 
 ## 📂 Data Domain — Apple Retail Sales
 
-The domain is modeled after Apple's real-world product and sales structure.
+The domain mirrors Apple's real-world product and business structure.
 
-### Source Entity Groups
+### Source Entity Groups (13 CSV Files)
 
 | Group | Entities |
 |---|---|
 | Geographic / Reference | Region, Country, Currency, Tax |
 | Product Hierarchy | Product Category → Family → Model → SKU, Product Country Availability |
-| Store Master | Store information (name, format, location, status) |
-| Customer Master | Customer demographics, segment, loyalty tier |
-| Sales Transactions | Sales Header (transaction-level), Sales Items (line-level) |
+| Store Master | Store information (name, format, location, lat/long, floor area) |
+| Customer Master | Customer demographics, segment, loyalty tier (50,000 customers) |
+| Sales Transactions | Sales Header (86,107 transactions), Sales Items (86,107 line items) |
 
 ### Product Hierarchy
 ```
-Category  (iPhone, iPad, Mac, Apple Watch, AirPods, Services...)
+Category  (iPhone, iPad, Mac, Apple Watch, AirPods, Services, Accessories...)
     └── Family  (MacBook Air, MacBook Pro, iMac, Mac mini...)
             └── Model  (specific product model)
                     └── SKU  (variant: storage + colour, price tier, launch date)
@@ -86,177 +86,196 @@ Category  (iPhone, iPad, Mac, Apple Watch, AirPods, Services...)
 
 ---
 
+## 🌍 Environment Strategy
+
+| | SALES_DEV | SALES_QA | SALES_PROD |
+|---|---|---|---|
+| Type | TRANSIENT | TRANSIENT | PERMANENT |
+| Time Travel | 1 day | 1 day | 7 days |
+| Fail-safe | None | None | Full |
+| Purpose | Development | Testing | Production |
+
+> TRANSIENT databases have no Fail-safe storage period — eliminating unnecessary storage costs in non-production environments. All four schemas (BRONZE, SILVER, GOLD, COMMON) exist in each database.
+
+---
+
 ## 🔄 Pipeline Layers
 
 ### 🟫 Bronze Layer — Raw Ingestion
 
-- CSV files uploaded to **Snowflake Internal Stage** via Snowsight
-- **COPY INTO** loads raw data into Bronze tables
-- **INFER_SCHEMA** detects column structure automatically — no manual DDL per table
-- Every record enriched with audit metadata:
+- 13 CSV files uploaded to **Snowflake Internal Stage** (`SALES_ANALYTICS_STAGE`) via Snowsight
+- **COPY INTO** loads data into Bronze tables with positional column mapping
+- Every record enriched with three audit metadata columns:
 
 | Column | Source | Purpose |
 |---|---|---|
-| `__FILE_NAME` | `METADATA$FILENAME` | Tracks source file per row |
-| `__ROW_NUMBER` | `METADATA$FILE_ROW_NUMBER` | Row position within file |
-| `__LOAD_TS` | `CURRENT_TIMESTAMP` | Load timestamp for incremental tracking |
+| `__FILE_NAME` | `METADATA$FILENAME` | Tracks exact source file per row |
+| `__ROW_NUMBER` | `METADATA$FILE_ROW_NUMBER` | Row position within source file |
+| `__LOAD_TS` | `CURRENT_TIMESTAMP()` | Load timestamp — used for deduplication downstream |
 
-- **Append-only** — raw data never modified, source fidelity preserved
-- Tables are **TRANSIENT** in Dev and QA to eliminate fail-safe storage costs
+- **Append-only** — raw data never modified, full source fidelity preserved
+- All tables are **TRANSIENT** in Dev and QA
 
 ---
 
 ### 🩶 Silver Layer — Cleansing & Transformation
 
-Built entirely using **Snowflake Dynamic Tables** — a modern alternative to the traditional Streams + Tasks pattern.
+Built entirely using **Snowflake Dynamic Tables** — a modern alternative to Streams + Tasks.
 
-**Dynamic Table Configuration:**
+**Configuration applied to all 13 Silver Dynamic Tables:**
 ```sql
-REFRESH_MODE = INCREMENTAL
-TARGET_LAG    = DOWNSTREAM
+TARGET_LAG    = DOWNSTREAM   -- refreshes only when Gold needs updated data
+REFRESH_MODE  = INCREMENTAL  -- processes only new/changed Bronze records
+INITIALIZE    = ON_CREATE    -- populated immediately on creation
+WAREHOUSE     = COMPUTE_WH
 ```
 
-**Key transformations applied:**
+**Three key transformations applied in every Silver table:**
 
-- **Deduplication** — keeps latest record per business key:
+**1. Deduplication** — keeps only the latest version of each record:
 ```sql
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY <business_key>
-    ORDER BY __LOAD_TS DESC
+    ORDER BY __LOAD_TS DESC, __ROW_NUMBER DESC
 ) = 1
 ```
 
-- **Data Quality Flag** — `IS_VALID_RECORD` boolean derived via CASE logic (null checks, domain validation, FK validation)
-- **Standardization** — column naming, explicit type casting, string trimming, VARIANT parsing for JSON/Parquet
+> `PRODUCT_COUNTRY_AVAILABILITY` uses a **composite key** `(SKU_CODE, COUNTRY_CODE)` — neither column alone is unique.
 
-**Why Dynamic Tables over Streams + Tasks?**
+**2. Data Quality Flag** — entity-specific validation rules per table:
+```sql
+CASE
+    WHEN <business_key> IS NULL THEN FALSE
+    WHEN <domain_rule_violated> THEN FALSE
+    ELSE TRUE
+END AS IS_VALID_RECORD
+```
 
-| | Dynamic Tables | Streams + Tasks |
-|---|---|---|
-| Incremental processing | Built-in | Manual stream logic per table |
-| Downstream refresh | Automatic | Requires explicit task chaining |
-| Orchestration complexity | Low | High |
-| Cost | Efficient | Higher (full refresh risk) |
+Examples: TAX_RATE validated between 0–1, STORE lat/lon validated within geographic bounds, CUSTOMER email validated with `LIKE '%@%.%'`, SALES_ITEM QUANTITY validated `> 0`.
+
+**3. Audit column renaming** — `__ROW_NUMBER → __SOURCE_ROW_NUMBER`, `__LOAD_TS → __BRONZE_LOAD_TS`
+
+Only records where `IS_VALID_RECORD = TRUE` flow into the Gold layer.
 
 ---
 
 ### 🥇 Gold Layer — Business Data Model
 
-Star schema with **SCD Type 2** dimensions and dual-grain fact tables.
+Star schema with **SCD Type 2** dimensions, dual-grain fact tables, a bridge table, and pre-computed aggregations. All Gold tables are **Dynamic Tables**.
+
+#### Surrogate Key Pattern (SHA2 Hash)
+```sql
+SHA2(CONCAT(
+    COALESCE(business_key, ''),
+    COALESCE(TO_VARCHAR(__BRONZE_LOAD_TS, 'YYYY-MM-DD HH24:MI:SS.FF6'), '')
+), 256) AS <entity>_DIM_KEY
+```
+Deterministic, no sequence objects needed, naturally supports SCD Type 2 versioning.
+
+#### SCD Type 2 Columns (on all 5 dimensions)
+```sql
+EFFECTIVE_START_TS  TIMESTAMP_NTZ        -- when this version became active
+EFFECTIVE_END_TS    TIMESTAMP_NTZ        -- 9999-12-31 for current records
+IS_CURRENT          BOOLEAN              -- TRUE = active version
+```
 
 #### Dimension Tables
 
-All dimensions implement **Slowly Changing Dimension Type 2**:
+| Dimension | Source | Key Attributes | Rows |
+|---|---|---|---|
+| `DIM_COUNTRY` | Joins 4 Silver tables (Country + Region + Currency + Tax) | Region, currency symbol, tax type/rate, market tier | 5 |
+| `DIM_PRODUCT` | Joins 4 Silver tables (SKU → Model → Family → Category) | Full hierarchy, lifecycle status, price tier, reporting segment | 53 |
+| `DIM_STORE` | Silver Store Master | Format (FLAGSHIP/MALL/MINI), lat/long, floor area, annual rent | 80 |
+| `DIM_CUSTOMER` | Silver Customer Master | Segment (Consumer/Business), loyalty tier (None/Silver/Gold/Platinum) | 50,000 |
+| `DIM_DATE` | Derived from Silver Sales Header dates | Year, quarter, month, week, fiscal year/quarter, weekend flag | 3,443 |
 
-```sql
--- Surrogate key pattern
-SHA2(CONCAT(<business_key>, <effective_start_ts>), 256) AS <entity>_DIM_KEY
-
--- SCD Type 2 columns
-EFFECTIVE_START_TS  TIMESTAMP
-EFFECTIVE_END_TS    TIMESTAMP   -- NULL = current record
-IS_CURRENT          BOOLEAN
-```
-
-| Dimension | Key Attributes |
-|---|---|
-| `DIM_COUNTRY` | Region, currency code/symbol, tax type & rate, market tier |
-| `DIM_PRODUCT` | Full hierarchy (Category → SKU), lifecycle status, price tier, reporting segment |
-| `DIM_STORE` | Format (FLAGSHIP/MALL/MINI), city, country, region, open date, floor area |
-| `DIM_CUSTOMER` | Segment (Consumer/Business), loyalty tier (None/Silver/Gold/Platinum), region |
-| `DIM_DATE` | Day, week, month, quarter, year, fiscal year/quarter, weekend flag |
+> `DIM_DATE` and both fact tables use `REFRESH_MODE = FULL` — SELECT DISTINCT and complex joins cannot be processed incrementally by Snowflake.
 
 #### Bridge Table
 
-`PRODUCT_COUNTRY_BRIDGE` resolves the **many-to-many** relationship between products and the countries where they are available — avoiding dimension fan-out and data duplication.
+`BRIDGE_PRODUCT_COUNTRY` resolves the **many-to-many** relationship between products and countries — avoiding dimension fan-out and data duplication.
+
+| Column | Purpose |
+|---|---|
+| `BRIDGE_KEY` | Unique hash key for this bridge record |
+| `PRODUCT_DIM_KEY` | FK to DIM_PRODUCT |
+| `COUNTRY_DIM_KEY` | FK to DIM_COUNTRY |
+| `LOCAL_LAUNCH_DATE` | Country-specific SKU launch date |
+| `IS_AVAILABLE` | Availability flag in this country |
+
+**212 rows** (53 SKUs × average 4 countries each)
 
 #### Fact Tables
 
-**`FACT_SALES_HEADER`** — Grain: one row per transaction
+**`FACT_SALES_HEADER`** — Grain: one row per transaction (86,107 rows)
 
-| Foreign Keys | Measures |
+| | Columns |
 |---|---|
-| CUSTOMER_DIM_KEY, STORE_DIM_KEY, COUNTRY_DIM_KEY, DATE_DIM_KEY | GROSS_AMOUNT, TOTAL_DISCOUNT, TOTAL_TAX, NET_TOTAL |
+| Dimension FKs | CUSTOMER_DIM_KEY, STORE_DIM_KEY, COUNTRY_DIM_KEY, DATE_DIM_KEY |
+| Degenerate Dims | TRANSACTION_ID, TRANSACTION_NUMBER, CHANNEL_ID (POS/WEB), PAYMENT_METHOD, CURRENCY |
+| Measures | GROSS_AMOUNT, TOTAL_DISCOUNT, TOTAL_TAX, NET_TOTAL, TRANSACTION_COUNT (=1) |
 
-**`FACT_SALES_ITEM`** — Grain: one row per product line item
+> COUNTRY_DIM_KEY is derived via the store's country — not the customer's address.
 
-| Foreign Keys | Measures |
+**`FACT_SALES_ITEM`** — Grain: one row per line item (86,107 rows)
+
+| | Columns |
 |---|---|
-| FACT_SALES_HEADER_KEY, PRODUCT_DIM_KEY, CUSTOMER_DIM_KEY, STORE_DIM_KEY, COUNTRY_DIM_KEY, DATE_DIM_KEY | QUANTITY, UNIT_PRICE, DISCOUNT_AMOUNT, TAX_AMOUNT, LINE_TOTAL |
+| Parent Fact FK | FACT_SALES_HEADER_KEY |
+| Inherited FKs | CUSTOMER_DIM_KEY, STORE_DIM_KEY, COUNTRY_DIM_KEY, DATE_DIM_KEY (from header) |
+| Product FK | PRODUCT_DIM_KEY |
+| Measures | QUANTITY, UNIT_PRICE, DISCOUNT_AMOUNT, TAX_AMOUNT, LINE_TOTAL, LINE_COUNT (=1) |
 
-> Two fact tables are intentional — Header supports financial/transaction analysis; Item supports product-level drill-down. A single table would force a choice between granularity and measure accuracy.
+> Two fact tables by design — Header for transaction/financial analysis, Item for product-level drill-down.
 
 #### Aggregated Fact Tables
 
-Pre-computed rollups for faster dashboard performance:
-- `AGG_FACT_DAILY` — Day-level net sales, transactions, units
-- `AGG_FACT_WEEKLY` — Week-level rollup
-- `AGG_FACT_MONTHLY` — Month-level rollup
+| Table | Grain | TARGET_LAG | Extra Measures |
+|---|---|---|---|
+| `FACT_SALES_DAILY` | Day + Store + Country + Channel | 5 minutes | AVG_TRANSACTION_VALUE, UNIQUE_CUSTOMERS |
+| `FACT_SALES_WEEKLY` | Week + Country + Channel | 7 days | ACTIVE_STORES, SELLING_DAYS |
+| `FACT_SALES_MONTHLY` | Month + Country + Channel + Fiscal | 30 days | FISCAL_YEAR, FISCAL_QUARTER, ACTIVE_STORES, SELLING_DAYS |
 
 ---
 
-## ⚙️ Automation — Task DAG
+## 🔗 Informational Constraints
 
-```
-ROOT TASK  (scheduled: every 5 minutes)
-     │
-     ├──▶ Child Task: Load Region
-     ├──▶ Child Task: Load Country
-     ├──▶ Child Task: Load Currency
-     ├──▶ Child Task: Load Tax
-     ├──▶ Child Task: Load Product Category
-     ├──▶ Child Task: Load Product Family
-     ├──▶ Child Task: Load Product Model
-     ├──▶ Child Task: Load Product SKU
-     ├──▶ Child Task: Load Product Country Availability
-     ├──▶ Child Task: Load Store Master
-     ├──▶ Child Task: Load Customer Master
-     ├──▶ Child Task: Load Sales Header
-     └──▶ Child Task: Load Sales Items
-```
+PK and FK constraints defined on all Gold tables using `NOT ENFORCED` — Snowflake uses these for query optimisation hints and BI tool relationship discovery, without runtime enforcement overhead.
 
-- Child Tasks run **in parallel** — one per source entity
-- Pattern-based file matching — only **new, unprocessed files** are loaded per run
-- Once Bronze is updated, **Dynamic Tables cascade the refresh automatically** through Silver → Gold → Aggregations
-- Zero manual intervention required after initial file drop
+```sql
+ALTER DYNAMIC TABLE SALES_DEV.GOLD.FACT_SALES_HEADER
+ADD CONSTRAINT fk_header_customer
+FOREIGN KEY (CUSTOMER_DIM_KEY)
+REFERENCES SALES_DEV.GOLD.DIM_CUSTOMER(CUSTOMER_DIM_KEY) NOT ENFORCED;
+```
 
 ---
 
 ## 🤖 Snowflake Cortex Code — AI-Assisted Development
 
-Cortex Code (CoCo) was used as a development accelerator at every stage:
-
-| Stage | Cortex Code Usage |
+| Stage | What Cortex Code Generated |
 |---|---|
-| Database & Schema Setup | Generated CREATE DATABASE / SCHEMA DDL with transient properties |
-| Bronze Layer | COPY INTO scripts, file format objects, metadata column patterns |
-| Silver Layer | Dynamic Table DDL, deduplication logic, data quality CASE expressions |
-| Gold Dimensions | SCD Type 2 DDL, SHA2 surrogate key patterns |
-| Gold Facts | Fact table DDL, surrogate key joins, measure derivations |
-| Date Dimension | Full DIM_DATE population script |
+| Database & Schema Setup | CREATE DATABASE / SCHEMA DDL with transient + time travel settings + comments |
+| Bronze Layer | COPY INTO scripts, file format object, metadata column patterns |
+| Silver Layer | Dynamic Table DDL, QUALIFY deduplication logic, IS_VALID_RECORD CASE expressions |
+| Gold Dimensions | SCD Type 2 DDL, SHA2 surrogate key patterns, column comments |
+| Gold Facts | Fact table DDL, dimension key joins, measure derivations |
+| Date Dimension | Full DIM_DATE derivation from Silver Sales Header date range |
 | Aggregations | Daily/weekly/monthly aggregated fact table scripts |
 | Semantic Layer | Initial YAML semantic model scaffolding |
-| Debugging | Query plan explanation and transformation logic review |
 
-**Workflow:**
-1. Provide structured prompt describing entity, columns, and transformation rules
-2. Cortex Code generates SQL / DDL
-3. Engineer validates, modifies, and tests
-4. Integrate into pipeline
+**Workflow:** Prompt → CoCo generates SQL → Engineer validates & modifies → Integrate into pipeline
 
 ---
 
 ## 🗣️ Semantic Layer — Cortex Analyst
 
-The Semantic Layer enables **natural language querying** of the Gold schema — no SQL required.
+Natural language querying of the Gold schema — no SQL required. Implemented as a YAML semantic model (`sales_semantic_model.yaml`) uploaded to a Snowflake stage.
 
-Implemented as a **YAML semantic model** (`sales_semantic_model.yaml`) uploaded to a Snowflake stage and powered by Cortex Analyst.
+### Tables Covered
+`dim_customer`, `dim_product`, `dim_store`, `dim_country`, `dim_date`, `fact_sales_header`, `fact_sales_item`
 
-### What's Defined
-
-**Tables:** `dim_customer`, `dim_product`, `dim_store`, `dim_country`, `dim_date`, `fact_sales_header`, `fact_sales_item`
-
-**Key Metrics:**
+### Key Metrics
 
 | Metric | Expression | Synonyms |
 |---|---|---|
@@ -267,41 +286,17 @@ Implemented as a **YAML semantic model** (`sales_semantic_model.yaml`) uploaded 
 | `total_units_sold` | `SUM(QUANTITY)` | units sold, quantity sold |
 | `total_line_revenue` | `SUM(LINE_TOTAL)` | product revenue, revenue by product |
 
-**Relationships:** All dimension-to-fact joins explicitly defined (header ↔ customer, store, country, date; item ↔ header, product, customer, store, country, date)
-
-### Example Natural Language Queries
+### Verified Queries (Golden SQL)
 ```
 "What are total sales by region?"
 "Top 10 products by revenue"
 "Show me the monthly sales trend"
+"Sales by customer loyalty tier"
 "Which stores have the highest sales?"
 "Compare POS vs Web channel performance"
-"Sales by customer loyalty tier"
+"What are sales by product category?"
+"What are sales by quarter?"
 ```
-
----
-
-## 🌍 Environment Strategy
-
-```
-┌──────────────────────┐
-│  Apple Sales (DEV)   │  ◀── Active development
-│  TRANSIENT tables    │      All schemas: Bronze, Silver, Gold, Common
-└──────────┬───────────┘
-           │  All database objects promoted as-is
-           ▼
-┌──────────────────────┐
-│  Apple Sales (QA)    │  ◀── Regression & integration testing
-│  TRANSIENT tables    │
-└──────────┬───────────┘
-           │  All database objects promoted as-is
-           ▼
-┌──────────────────────┐
-│  Apple Sales (PROD)  │  ◀── Final production deployment
-└──────────────────────┘
-```
-
-> Dev and QA use **TRANSIENT** tables and schemas — this eliminates Snowflake fail-safe storage costs in non-production environments. Common objects (file formats, sequences) live in the **Common Schema** within each context for reusability.
 
 ---
 
@@ -309,13 +304,16 @@ Implemented as a **YAML semantic model** (`sales_semantic_model.yaml`) uploaded 
 
 | Decision | Rationale |
 |---|---|
-| Dynamic Tables over Streams + Tasks | Simpler architecture, built-in incremental processing, lower cost |
-| Two Fact Tables (Header + Item) | Correct grain separation — prevents measure duplication or granularity loss |
-| Bridge Table for Product-Country | Resolves many-to-many without dimension fan-out or data duplication |
-| SCD Type 2 for all dimensions | Preserves full historical state for accurate time-based analysis |
-| Transient tables in Dev & QA | Eliminates fail-safe storage cost in non-production environments |
-| Common Schema for utilities | Single maintenance point for shared objects across all layers |
-| Informational FK constraints | Documents relationships without runtime enforcement overhead |
-| INFER_SCHEMA for Bronze DDL | Eliminates manual table creation — accelerates onboarding new sources |
-| Metadata columns in Bronze | Full data lineage from file to row — supports debugging and auditing |
-| Cortex Code for development | Reduces repetitive coding — accelerates all pipeline stages |
+| Dynamic Tables over Streams + Tasks | Built-in incremental processing, no manual stream logic, lower cost |
+| TRANSIENT databases for Dev & QA | Eliminates fail-safe storage charges — Dev/QA data is always reproducible |
+| 7-day Time Travel for PROD | Maximum recovery window — standard Snowflake best practice for production |
+| SHA2 hash surrogate keys | Deterministic (no duplicates on re-run), no sequence objects, SCD2-compatible |
+| SCD Type 2 on all 5 dimensions | Preserves historical attribute states for accurate time-based analysis |
+| DIM_COUNTRY consolidates 4 Silver tables | Avoids analysts joining 4 tables for every geographic query |
+| INNER JOINs in DIM_PRODUCT | Orphaned SKUs excluded from Gold — referential integrity enforced at modeling time |
+| LEFT JOINs in DIM_COUNTRY | Country records not dropped if currency/tax reference data is missing |
+| FACT_SALES_ITEM inherits FKs from header | Avoids redundant joins — header already resolved all dimension keys |
+| Bridge table for Product-Country | Correct many-to-many resolution — no dimension fan-out or measure double-counting |
+| NOT ENFORCED constraints | Documents relationships for BI tools and Cortex Analyst without runtime overhead |
+| COMMENT on every object and column | Self-documenting schema — critical for team collaboration and Cortex Analyst accuracy |
+| Different TARGET_LAG on agg tables | Aligns refresh frequency to business use: 5 min (daily ops) / 7d (weekly) / 30d (monthly exec) |
