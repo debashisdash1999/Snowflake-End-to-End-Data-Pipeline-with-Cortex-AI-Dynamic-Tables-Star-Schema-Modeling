@@ -10,6 +10,8 @@ This project is an end-to-end **Snowflake-native data engineering pipeline** bui
 
 The pipeline ingests raw CSV data, cleanses and validates it, builds a star schema with SCD Type 2 dimensions and dual-grain fact tables, pre-computes aggregations at daily/weekly/monthly grains, and exposes the data for **natural language querying** through a Cortex Analyst Semantic Layer.
 
+> **Note on Development Approach:** This project was built using an AI-assisted workflow. The architecture, data modeling decisions, and pipeline design are my own — Snowflake Cortex Code was used as a development accelerator, generating SQL, DDL, and semantic layer scaffolding from my prompts. Every output was reviewed, validated, and refined before being integrated into the pipeline.
+
 ---
 
 ## 🏗️ Architecture Overview
@@ -261,6 +263,10 @@ REFERENCES SALES_DEV.GOLD.DIM_CUSTOMER(CUSTOMER_DIM_KEY) NOT ENFORCED;
 
 ## 🤖 Snowflake Cortex Code — AI-Assisted Development
 
+Cortex Code (CoCo) is an AI coding assistant built into Snowflake. Rather than writing every SQL script from scratch, I used Cortex Code as a development accelerator throughout the project — describing what I needed in natural language and having it generate the corresponding SQL, DDL, and YAML. Every generated output was reviewed, tested, and adjusted before being integrated into the pipeline.
+
+**My role:** Define the architecture, design the data model, write the prompts, validate all outputs, and make all structural decisions. Cortex Code handled the code generation.
+
 | Stage | What Cortex Code Generated |
 |---|---|
 | Database & Schema Setup | CREATE DATABASE / SCHEMA DDL with transient + time travel settings + comments |
@@ -272,7 +278,7 @@ REFERENCES SALES_DEV.GOLD.DIM_CUSTOMER(CUSTOMER_DIM_KEY) NOT ENFORCED;
 | Aggregations | Daily/weekly/monthly aggregated fact table scripts |
 | Semantic Layer | Initial YAML semantic model scaffolding |
 
-**Workflow:** Prompt → CoCo generates SQL → Engineer validates & modifies → Integrate into pipeline
+**Workflow:** Define requirement → Write prompt → Cortex Code generates SQL → Engineer reviews & modifies → Integrate into pipeline
 
 ---
 
