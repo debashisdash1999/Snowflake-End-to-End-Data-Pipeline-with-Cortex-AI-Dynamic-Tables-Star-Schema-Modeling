@@ -43,6 +43,10 @@ The pipeline ingests raw CSV data, cleanses and validates it, builds a star sche
 └──────────────────────────────────────────────────────────────┘
 ```
 
+**Overall Pipeline Flow (Bronze → Silver → Gold):**
+
+![Overall Flow Diagram](overall-flow-diagram.png)
+
 ---
 
 ## 🧰 Technology Stack
@@ -65,6 +69,10 @@ The pipeline ingests raw CSV data, cleanses and validates it, builds a star sche
 ## 📂 Data Domain — Apple Retail Sales
 
 The domain mirrors Apple's real-world product and business structure.
+
+**Source Entity Groups and Domain Reference:**
+
+![Data Sources](data-sources.png)
 
 ### Source Entity Groups (13 CSV Files)
 
