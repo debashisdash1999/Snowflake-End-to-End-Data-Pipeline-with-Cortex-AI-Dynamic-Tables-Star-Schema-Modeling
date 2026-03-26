@@ -45,7 +45,7 @@ The pipeline ingests raw CSV data, cleanses and validates it, builds a star sche
 
 **Overall Pipeline Flow (Bronze → Silver → Gold):**
 
-![Overall Flow Diagram](overall-flow-diagram.png)
+<img width="928" height="660" alt="overall-flow-diagram" src="https://github.com/user-attachments/assets/7644fb4a-dc3b-4376-b88e-da7031f8a9fe" />
 
 ---
 
@@ -72,7 +72,7 @@ The domain mirrors Apple's real-world product and business structure.
 
 **Source Entity Groups and Domain Reference:**
 
-![Data Sources](data-sources.png)
+<img width="1190" height="445" alt="data-sources" src="https://github.com/user-attachments/assets/7cad3b9d-0dc0-4ad9-8a7b-19b446c29215" />
 
 ### Source Entity Groups (13 CSV Files)
 
