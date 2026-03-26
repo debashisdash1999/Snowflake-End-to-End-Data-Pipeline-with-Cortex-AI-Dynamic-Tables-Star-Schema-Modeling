@@ -294,17 +294,45 @@ Natural language querying of the Gold schema — no SQL required. Implemented as
 | `total_units_sold` | `SUM(QUANTITY)` | units sold, quantity sold |
 | `total_line_revenue` | `SUM(LINE_TOTAL)` | product revenue, revenue by product |
 
-### Verified Queries (Golden SQL)
-```
-"What are total sales by region?"
-"Top 10 products by revenue"
-"Show me the monthly sales trend"
-"Sales by customer loyalty tier"
-"Which stores have the highest sales?"
-"Compare POS vs Web channel performance"
-"What are sales by product category?"
-"What are sales by quarter?"
-```
+### Verified Queries — Cortex Analyst in Action
+
+The following natural language queries were tested and verified against the semantic model.
+
+---
+
+**1. What are total sales by region?**
+
+<img width="1366" height="647" alt="Sales by region" src="https://github.com/user-attachments/assets/e16ee6be-762e-4330-a21e-113cf1d2d871" />
+
+---
+
+**2. Show me the monthly sales trend**
+
+<img width="1365" height="650" alt="Monthly sales trend" src="https://github.com/user-attachments/assets/5ce1d269-3348-4b98-b7af-e61c9abf204b" />
+
+---
+
+**3. Sales by customer loyalty tier**
+
+<img width="1366" height="657" alt="Sales by loyalty tier" src="https://github.com/user-attachments/assets/6acfcb1a-40f7-486b-a2c0-9d0b9f9c4278" />
+
+---
+
+**4. Compare POS vs Web channel performance**
+
+<img width="1366" height="644" alt="POS vs Web channel" src="https://github.com/user-attachments/assets/a3f30cfa-8aa7-41b0-92b0-d0320e0334fd" />
+
+---
+
+**5. What are sales by product category?**
+
+<img width="1366" height="647" alt="Sales by product category" src="https://github.com/user-attachments/assets/73836a2e-0f20-4582-8e8b-68fd34042d32" />
+
+---
+
+**6. What are sales by quarter?**
+
+<img width="1366" height="650" alt="Sales by quarter" src="https://github.com/user-attachments/assets/0f345238-a6b8-4668-8879-4f0368e87df2" />
 
 ---
 
