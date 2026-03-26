@@ -1,6 +1,6 @@
 # ❄️ Snowflake Cortex Code (CoCo) — Apple Retail Sales Data Platform
 
-> A fully automated, AI-assisted, medallion-based Snowflake data platform with star schema modeling and natural language analytics capability.
+> A fully automated, AI-assisted, medallion-based Snowflake data platform with star schema modeling and natural language analytics capabilities. Refer to the "Snowflake Cortex AI Pipeline.pdf" for more details.
 
 ---
 
